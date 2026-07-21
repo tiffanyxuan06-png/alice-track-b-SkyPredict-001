@@ -1,0 +1,67 @@
+{
+  "project": "ALICE Track B - Explainable Engine Health & RUL Prediction",
+  "dataset": "NASA C-MAPSS FD001",
+  "model_type": "sklearn.Pipeline(MinMaxScaler + RandomForestRegressor)",
+  "target": "RUL",
+  "rul_clip": 125,
+  "feature_names": [
+    "op_setting_1",
+    "op_setting_2",
+    "op_setting_3",
+    "sensor_01",
+    "sensor_02",
+    "sensor_03",
+    "sensor_04",
+    "sensor_05",
+    "sensor_06",
+    "sensor_07",
+    "sensor_08",
+    "sensor_09",
+    "sensor_10",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_16",
+    "sensor_17",
+    "sensor_18",
+    "sensor_19",
+    "sensor_20",
+    "sensor_21"
+  ],
+  "n_features": 24,
+  "constant_features": [
+    "op_setting_3",
+    "sensor_01",
+    "sensor_05",
+    "sensor_10",
+    "sensor_16",
+    "sensor_18",
+    "sensor_19"
+  ],
+  "risk_thresholds": {
+    "high_below": 30,
+    "medium_below": 75
+  },
+  "metrics": {
+    "train": {
+      "rmse": 9.151893013935016,
+      "mae": 6.509519276382233,
+      "r2": 0.9518439167013546
+    },
+    "val": {
+      "rmse": 18.769357952151378,
+      "mae": 13.393381679992418,
+      "r2": 0.7968292940869469
+    },
+    "test": {
+      "rmse": 20.2285127950633,
+      "mae": 14.482680124404638,
+      "r2": 0.760956150331104
+    }
+  },
+  "random_seed": 42,
+  "sklearn_version": "1.9.0",
+  "trained_at": "2026-07-21T16:06:37.378427+00:00"
+}
