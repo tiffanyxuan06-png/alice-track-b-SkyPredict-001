@@ -17,10 +17,11 @@ def test_missing_artifacts_raise_file_not_found(tmp_path):
 
 def test_metadata_missing_required_key_raises(tmp_path):
     # Real model, but strip a required key from a copy of the metadata.
-    metadata = json.loads(settings.metadata_path.read_text(encoding="utf-8"))
+    model_path, metadata_path = settings.artifact_paths("xgb")
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     metadata.pop("rul_clip")
     bad_meta = tmp_path / "model_metadata.json"
     bad_meta.write_text(json.dumps(metadata))
 
     with pytest.raises(ValueError, match="rul_clip"):
-        load_artifacts(settings.model_path, bad_meta)
+        load_artifacts(model_path, bad_meta)

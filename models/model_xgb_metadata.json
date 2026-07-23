@@ -1,0 +1,191 @@
+{
+  "project": "ALICE Track B - Explainable Engine Health & RUL Prediction",
+  "dataset": "NASA C-MAPSS FD001",
+  "model_key": "xgb",
+  "model_type": "sklearn.Pipeline(StandardScaler + XGBRegressor)",
+  "target": "RUL",
+  "rul_clip": 125,
+  "feature_names": [
+    "op_setting_1",
+    "op_setting_2",
+    "op_setting_3",
+    "sensor_01",
+    "sensor_02",
+    "sensor_03",
+    "sensor_04",
+    "sensor_05",
+    "sensor_06",
+    "sensor_07",
+    "sensor_08",
+    "sensor_09",
+    "sensor_10",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_16",
+    "sensor_17",
+    "sensor_18",
+    "sensor_19",
+    "sensor_20",
+    "sensor_21"
+  ],
+  "n_features": 24,
+  "constant_features": [
+    "op_setting_3",
+    "sensor_01",
+    "sensor_05",
+    "sensor_10",
+    "sensor_16",
+    "sensor_18",
+    "sensor_19"
+  ],
+  "permutation_importance": [
+    {
+      "feature": "op_setting_1",
+      "importance_mean": 0.00026569366455078127,
+      "importance_std": 0.0005358429481434875
+    },
+    {
+      "feature": "op_setting_2",
+      "importance_mean": 0.00013155937194824218,
+      "importance_std": 0.0005379681712375144
+    },
+    {
+      "feature": "op_setting_3",
+      "importance_mean": 0.0,
+      "importance_std": 0.0
+    },
+    {
+      "feature": "sensor_01",
+      "importance_mean": 0.0,
+      "importance_std": 0.0
+    },
+    {
+      "feature": "sensor_02",
+      "importance_mean": 0.0024480938911437987,
+      "importance_std": 0.0016355870957390274
+    },
+    {
+      "feature": "sensor_03",
+      "importance_mean": 0.003461122512817383,
+      "importance_std": 0.0010451489958971539
+    },
+    {
+      "feature": "sensor_04",
+      "importance_mean": 0.02410014271736145,
+      "importance_std": 0.002693926474265406
+    },
+    {
+      "feature": "sensor_05",
+      "importance_mean": 0.0,
+      "importance_std": 0.0
+    },
+    {
+      "feature": "sensor_06",
+      "importance_mean": 9.305477142333985e-05,
+      "importance_std": 8.393417127297927e-05
+    },
+    {
+      "feature": "sensor_07",
+      "importance_mean": 0.023314428329467774,
+      "importance_std": 0.003218634323435481
+    },
+    {
+      "feature": "sensor_08",
+      "importance_mean": 0.004162043333053589,
+      "importance_std": 0.001348961660903813
+    },
+    {
+      "feature": "sensor_09",
+      "importance_mean": 0.09377889037132263,
+      "importance_std": 0.007922986295449753
+    },
+    {
+      "feature": "sensor_10",
+      "importance_mean": 0.0,
+      "importance_std": 0.0
+    },
+    {
+      "feature": "sensor_11",
+      "importance_mean": 0.032768481969833375,
+      "importance_std": 0.004093157786736597
+    },
+    {
+      "feature": "sensor_12",
+      "importance_mean": 0.011547529697418213,
+      "importance_std": 0.002318430097685516
+    },
+    {
+      "feature": "sensor_13",
+      "importance_mean": 0.005726081132888794,
+      "importance_std": 0.0014921902507528764
+    },
+    {
+      "feature": "sensor_14",
+      "importance_mean": 0.04574936628341675,
+      "importance_std": 0.005153181889641181
+    },
+    {
+      "feature": "sensor_15",
+      "importance_mean": 0.0062541663646698,
+      "importance_std": 0.001919483016389859
+    },
+    {
+      "feature": "sensor_16",
+      "importance_mean": 0.0,
+      "importance_std": 0.0
+    },
+    {
+      "feature": "sensor_17",
+      "importance_mean": 0.004342371225357055,
+      "importance_std": 0.0012151950470322972
+    },
+    {
+      "feature": "sensor_18",
+      "importance_mean": 0.0,
+      "importance_std": 0.0
+    },
+    {
+      "feature": "sensor_19",
+      "importance_mean": 0.0,
+      "importance_std": 0.0
+    },
+    {
+      "feature": "sensor_20",
+      "importance_mean": 0.005013459920883178,
+      "importance_std": 0.0019698383740888456
+    },
+    {
+      "feature": "sensor_21",
+      "importance_mean": 0.007976818084716796,
+      "importance_std": 0.0020380036084861595
+    }
+  ],
+  "risk_thresholds": {
+    "high_below": 30,
+    "medium_below": 75
+  },
+  "metrics": {
+    "train": {
+      "rmse": 14.152675286794278,
+      "mae": 10.168888092041016,
+      "r2": 0.8848387598991394
+    },
+    "val": {
+      "rmse": 18.940964385055413,
+      "mae": 13.354522705078125,
+      "r2": 0.793097198009491
+    },
+    "test": {
+      "rmse": 20.239913877522582,
+      "mae": 14.040173530578613,
+      "r2": 0.7606866359710693
+    }
+  },
+  "random_seed": 42,
+  "sklearn_version": "1.9.0",
+  "xgboost_version": "3.3.0",
+  "trained_at": "2026-07-23T02:07:32.776593+00:00"
+}

@@ -42,6 +42,15 @@ class ModelArtifacts:
             for name, imp in zip(self.feature_names, importances)
         }
 
+    @property
+    def permutation_importance(self) -> list[dict[str, float]]:
+        """Permutation importances computed on validation data at export time.
+
+        Data-driven (not recoverable from the model alone), so it is stored in
+        the metadata. Empty list if the artifact did not export it.
+        """
+        return self.metadata.get("permutation_importance", [])
+
 
 # Everything the API needs to drive prediction must come from the exported
 # metadata, not from constants baked into the backend.

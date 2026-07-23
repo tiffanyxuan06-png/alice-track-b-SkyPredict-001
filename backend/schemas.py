@@ -18,6 +18,13 @@ class RiskLevel(str, Enum):
     low = "Low"
 
 
+class ModelName(str, Enum):
+    """Selectable model, passed as the ?model= query parameter."""
+
+    rf = "rf"
+    xgb = "xgb"
+
+
 class EngineReading(BaseModel):
     """A single engine snapshot (one operating cycle)."""
 
@@ -91,22 +98,30 @@ class FeatureImportance(BaseModel):
     importance: float
 
 
+class PermutationImportance(BaseModel):
+    feature: str
+    importance_mean: float = Field(description="Mean drop in score when shuffled.")
+    importance_std: float = Field(description="Std of the drop across repeats.")
+
+
 class LocalContribution(BaseModel):
     feature: str
     value: float
-    scaled_value: float = Field(description="Feature min-max scaled to [0, 1].")
-    saliency: float = Field(
-        description="Heuristic attribution: global importance x scaled value."
+    shap_value: float = Field(
+        description="SHAP contribution to predicted RUL (cycles); + raises RUL, - lowers it."
     )
 
 
 class ExplanationResponse(BaseModel):
     prediction: PredictionResponse
+    base_value: float = Field(
+        description="SHAP baseline (mean model output); base + sum(shap) = raw prediction."
+    )
     global_importances: list[FeatureImportance] = Field(
         description="Top model-wide feature importances."
     )
     local_contributions: list[LocalContribution] = Field(
-        description="Top drivers for this specific reading (heuristic saliency)."
+        description="Top SHAP drivers for this specific reading."
     )
 
 
@@ -120,6 +135,7 @@ class PrioritizationResponse(BaseModel):
 
 
 class ModelInfoResponse(BaseModel):
+    model_key: str
     model_type: str
     dataset: str
     target: str
@@ -134,5 +150,6 @@ class ModelInfoResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    model_loaded: bool
+    models_loaded: list[str]
+    default_model: str
     app_version: str

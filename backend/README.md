@@ -16,7 +16,7 @@ backend/
 ├── routers/             # HTTP layer — one operation per function
 │   ├── health.py            # GET /health, GET /model-info
 │   ├── prediction.py        # POST /predict, POST /predict/batch
-│   ├── explainability.py    # GET /explain/global, POST /explain
+│   ├── explainability.py    # GET /explain/global, /explain/permutation-importance, POST /explain
 │   └── optional_module.py   # POST /prioritize  (advanced decision-support)
 ├── services/            # business logic
 │   ├── artifacts.py         # load model.pkl + model_metadata.json
@@ -29,20 +29,22 @@ backend/
 
 ## Model artifacts
 
-The backend loads (it does **not** retrain):
+Two models are trained on the same `StandardScaler` pipeline and loaded into a
+selectable registry (the backend does **not** retrain):
 
-- `models/model.pkl` — fitted sklearn `Pipeline` (MinMaxScaler + RandomForestRegressor)
-- `models/model_metadata.json` — feature names, RUL clip, risk thresholds, metrics
+- `models/model_rf.pkl`  + `model_rf_metadata.json`  — RandomForest
+- `models/model_xgb.pkl` + `model_xgb_metadata.json` — XGBoost
 
-Regenerate them from the processed data with:
+Each metadata file carries the contract: feature names, RUL clip, risk thresholds,
+metrics and permutation importance. Regenerate both from the processed data with:
 
 ```bash
 python models/train_baseline.py
 ```
 
-Replace the estimator in that script with the team's tuned model; as long as the
-artifact contract (same feature order + metadata keys) is unchanged, the API keeps
-working without edits.
+Pick the model per request with `?model=rf|xgb` (defaults to `SKYPREDICT_DEFAULT_MODEL`).
+Add or swap estimators in `ESTIMATORS` in that script; as long as the artifact
+contract (same feature order + metadata keys) holds, the API keeps working.
 
 ## Setup & run
 
@@ -71,7 +73,7 @@ cp backend/.env.example backend/.env
 |---|---|---|
 | `SKYPREDICT_APP_NAME` / `SKYPREDICT_APP_VERSION` | see `config.py` | API metadata |
 | `SKYPREDICT_MODELS_DIR` | `models` | Where artifacts are loaded from |
-| `SKYPREDICT_MODEL_FILENAME` / `SKYPREDICT_METADATA_FILENAME` | `model.pkl` / `model_metadata.json` | Artifact filenames |
+| `SKYPREDICT_DEFAULT_MODEL` | `xgb` | Model used when `?model=` is omitted (`rf`/`xgb`) |
 | `SKYPREDICT_CORS_ORIGINS` | Streamlit localhost | Allowed dashboard origins (JSON array) |
 
 `.env` holds **deployment config only**. The RUL clip and risk thresholds are
@@ -81,15 +83,18 @@ re-export from `train_baseline.py`) to change them. `.env` is gitignored — com
 
 ## Endpoints
 
-| Method | Path              | Purpose                                            |
-|--------|-------------------|----------------------------------------------------|
-| GET    | `/health`         | Liveness + whether the model is loaded             |
-| GET    | `/model-info`     | Model type, features, metrics, risk thresholds     |
-| POST   | `/predict`        | RUL + risk for one engine reading                  |
-| POST   | `/predict/batch`  | RUL for many readings + fleet risk summary         |
-| GET    | `/explain/global` | Model-wide feature importances                     |
-| POST   | `/explain`        | Predict + per-reading sensor saliency              |
-| POST   | `/prioritize`     | Rank a fleet by maintenance urgency (advanced)     |
+All model-backed routes accept an optional `?model=rf|xgb` query parameter.
+
+| Method | Path                            | Purpose                                        |
+|--------|---------------------------------|------------------------------------------------|
+| GET    | `/health`                       | Liveness + which models are loaded             |
+| GET    | `/model-info`                   | Selected model's type, features, metrics       |
+| POST   | `/predict`                      | RUL + risk for one engine reading              |
+| POST   | `/predict/batch`                | RUL for many readings + fleet risk summary     |
+| GET    | `/explain/global`               | Model's own feature importances                |
+| GET    | `/explain/permutation-importance` | Permutation importances (validation set)     |
+| POST   | `/explain`                      | Predict + per-reading sensor saliency          |
+| POST   | `/prioritize`                   | Rank a fleet by maintenance urgency (advanced) |
 
 ### Example
 
@@ -116,7 +121,7 @@ curl -X POST http://127.0.0.1:8000/predict \
 ## Testing
 
 End-to-end tests under `backend/tests/` start the app through its lifespan (loading
-the real `model.pkl`) and drive every endpoint over HTTP, using real rows from
+the real models) and drive every endpoint over HTTP, using real rows from
 `data/processed/test.csv` as payloads. From the repo root:
 
 ```bash

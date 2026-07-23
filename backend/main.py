@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from backend.config import settings
+from backend.config import MODEL_FILES, settings
 from backend.routers import explainability, health, optional_module, prediction
 from backend.services.artifacts import load_artifacts
 
@@ -27,18 +27,18 @@ logger = logging.getLogger("skypredict")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load model artifacts once at startup; clear them on shutdown."""
-    try:
-        app.state.artifacts = load_artifacts(
-            settings.model_path, settings.metadata_path
-        )
-        logger.info("Loaded model artifacts from %s", settings.model_path)
-    except FileNotFoundError as exc:
-        # Start anyway so /health reports the problem instead of crashing.
-        app.state.artifacts = None
-        logger.error("%s", exc)
+    """Load every configured model into a registry at startup."""
+    registry = {}
+    for key in MODEL_FILES:
+        try:
+            registry[key] = load_artifacts(*settings.artifact_paths(key))
+            logger.info("Loaded model '%s'", key)
+        except (FileNotFoundError, ValueError) as exc:
+            # Skip a missing/malformed model so the rest still serve.
+            logger.error("Could not load model '%s': %s", key, exc)
+    app.state.models = registry
     yield
-    app.state.artifacts = None
+    app.state.models = {}
 
 
 app = FastAPI(
@@ -84,22 +84,25 @@ async def root() -> dict[str, str]:
 
 
 def _example_reading() -> dict | None:
-    """Build a realistic EngineReading example from the fitted scaler's ranges.
+    """Build a realistic EngineReading example from the fitted scaler.
 
-    Uses the per-feature midpoint of the scaler's learned min/max, so the Swagger
-    "Try it out" body is pre-filled with in-range values derived from the model —
-    not hardcoded. Returns None (docs render without an example) if unavailable.
+    Inverse-transforms the scaled origin, giving each feature's central training
+    value (the mean, for StandardScaler). The Swagger "Try it out" body is then
+    pre-filled with in-range values derived from the model — not hardcoded.
+    Returns None (docs render without an example) if unavailable.
     """
-    artifacts = getattr(app.state, "artifacts", None)
+    registry = getattr(app.state, "models", {})
+    artifacts = registry.get(settings.default_model)
     if artifacts is None:
         return None
-    scaler = artifacts.model[0]
-    if not hasattr(scaler, "data_min_"):
+    n = len(artifacts.feature_names)
+    try:
+        central = artifacts.model[:-1].inverse_transform([[0.0] * n])[0]
+    except Exception:
         return None
-    midpoints = (scaler.data_min_ + scaler.data_max_) / 2.0
     reading = {
         name: round(float(value), 4)
-        for name, value in zip(artifacts.feature_names, midpoints)
+        for name, value in zip(artifacts.feature_names, central)
     }
     return {"unit_number": 1, "time_in_cycles": 1, **reading}
 

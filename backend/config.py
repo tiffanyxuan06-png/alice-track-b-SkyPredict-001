@@ -16,6 +16,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BACKEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BACKEND_DIR.parent
 
+# The selectable models and their exported artifacts (produced by
+# models/train_baseline.py). The key is what the API accepts as ?model=.
+MODEL_FILES: dict[str, tuple[str, str]] = {
+    "rf": ("model_rf.pkl", "model_rf_metadata.json"),
+    "xgb": ("model_xgb.pkl", "model_xgb_metadata.json"),
+}
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -32,10 +39,10 @@ class Settings(BaseSettings):
         "(ALICE Track B, NASA C-MAPSS)."
     )
 
-    # Exported artifacts produced by models/train_baseline.py (the notebook pipeline).
+    # Directory holding the exported model artifacts.
     models_dir: Path = REPO_ROOT / "models"
-    model_filename: str = "model.pkl"
-    metadata_filename: str = "model_metadata.json"
+    # Model served when a request does not specify ?model=.
+    default_model: str = "xgb"
 
     # Streamlit dashboard origin(s) allowed to call this API.
     cors_origins: list[str] = [
@@ -43,13 +50,10 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8501",
     ]
 
-    @property
-    def model_path(self) -> Path:
-        return self.models_dir / self.model_filename
-
-    @property
-    def metadata_path(self) -> Path:
-        return self.models_dir / self.metadata_filename
+    def artifact_paths(self, model_key: str) -> tuple[Path, Path]:
+        """(model.pkl, metadata.json) paths for a model key."""
+        pkl, meta = MODEL_FILES[model_key]
+        return self.models_dir / pkl, self.models_dir / meta
 
 
 @lru_cache

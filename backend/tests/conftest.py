@@ -1,9 +1,9 @@
 """Shared fixtures for the backend end-to-end tests.
 
 These are true e2e tests: the ``client`` fixture starts the app through its
-lifespan, which loads the real exported ``model.pkl`` + ``model_metadata.json``,
-and requests hit the real routers and services over HTTP. Sample payloads are
-built from real rows of ``data/processed/test.csv`` (no hardcoded feature data).
+lifespan, which loads the real exported models (RandomForest + XGBoost), and
+requests hit the real routers and services over HTTP. Sample payloads are built
+from real rows of ``data/processed/test.csv`` (no hardcoded feature data).
 """
 
 from __future__ import annotations

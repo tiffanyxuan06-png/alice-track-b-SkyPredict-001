@@ -13,9 +13,11 @@ router = APIRouter(tags=["health"])
 
 @router.get("/health")
 async def health(request: Request) -> HealthResponse:
+    registry = getattr(request.app.state, "models", {})
     return HealthResponse(
         status="ok",
-        model_loaded=getattr(request.app.state, "artifacts", None) is not None,
+        models_loaded=sorted(registry),
+        default_model=settings.default_model,
         app_version=settings.app_version,
     )
 
@@ -24,6 +26,7 @@ async def health(request: Request) -> HealthResponse:
 async def model_info(artifacts: ArtifactsDep) -> ModelInfoResponse:
     md = artifacts.metadata
     return ModelInfoResponse(
+        model_key=md.get("model_key", "unknown"),
         model_type=md.get("model_type", "unknown"),
         dataset=md.get("dataset", "unknown"),
         target=md.get("target", "RUL"),

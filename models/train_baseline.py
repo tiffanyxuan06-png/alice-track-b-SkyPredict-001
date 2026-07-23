@@ -1,14 +1,15 @@
-"""Train and export a baseline RUL regression model for Track B.
+"""Train and export the RUL regression models for Track B.
 
-This reproduces the finalized pipeline defined in the notebooks and exports the
-artifact contract the FastAPI backend loads at startup:
+Trains two models on the same StandardScaler pipeline and exports one artifact
+pair per model, which the FastAPI backend loads into a selectable registry:
 
-    models/model.pkl            -> a fitted sklearn Pipeline (scaler + regressor)
-    models/model_metadata.json  -> feature names, target, metrics, versions, thresholds
+    models/model_rf.pkl  + models/model_rf_metadata.json    (RandomForest)
+    models/model_xgb.pkl + models/model_xgb_metadata.json   (XGBoost)
 
-The team replaces the estimator here with their tuned model from session 2/3.
-As long as the artifact contract (same feature order + metadata keys) is kept,
-the backend keeps working unchanged.
+Each metadata file is the self-contained contract the backend loads: feature
+names, target, RUL clip, risk thresholds, metrics, permutation importance and
+versions. Keep the contract (same feature order + metadata keys) and the backend
+keeps working unchanged.
 
 Run:
     python models/train_baseline.py
@@ -24,10 +25,13 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn
+import xgboost
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.inspection import permutation_importance
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
+from xgboost import XGBRegressor
 
 # --- Reproducibility ---------------------------------------------------------
 RANDOM_SEED = 42
@@ -44,6 +48,27 @@ RUL_CLIP = 125  # C-MAPSS standard clip applied to the target in the notebook
 
 # Decision-support risk bands on predicted RUL (cycles remaining).
 RISK_THRESHOLDS = {"high_below": 30, "medium_below": 75}
+
+# The models to train and export, keyed by the name the API selects with ?model=.
+ESTIMATORS = {
+    "rf": RandomForestRegressor(
+        n_estimators=200,
+        max_depth=None,
+        min_samples_leaf=3,
+        random_state=RANDOM_SEED,
+        n_jobs=-1,
+    ),
+    "xgb": XGBRegressor(
+        n_estimators=400,
+        max_depth=5,
+        learning_rate=0.05,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        reg_lambda=1.0,
+        random_state=RANDOM_SEED,
+        n_jobs=-1,
+    ),
+}
 
 
 def load_split(name: str) -> pd.DataFrame:
@@ -63,36 +88,13 @@ def evaluate(model: Pipeline, X: pd.DataFrame, y: pd.Series) -> dict[str, float]
     }
 
 
-def main() -> None:
-    train_df = load_split("train")
-    val_df = load_split("val")
-    test_df = load_split("test")
+def train_and_export(name, estimator, data, feature_names, constant_features):
+    (X_train, y_train), (X_val, y_val), (X_test, y_test) = data
 
-    feature_names = [c for c in train_df.columns if c != TARGET]
-    constant_features = [c for c in feature_names if train_df[c].nunique() == 1]
-
-    X_train, y_train = train_df[feature_names], train_df[TARGET]
-    X_val, y_val = val_df[feature_names], val_df[TARGET]
-    X_test, y_test = test_df[feature_names], test_df[TARGET]
-
-    # MinMaxScaler mirrors the normalization explored in the notebook; the tree
-    # ensemble is scale-invariant but the scaler keeps the artifact contract
-    # explicit (a fitted preprocessing object travels with the model).
-    model = Pipeline(
-        steps=[
-            ("scaler", MinMaxScaler()),
-            (
-                "regressor",
-                RandomForestRegressor(
-                    n_estimators=200,
-                    max_depth=None,
-                    min_samples_leaf=3,
-                    random_state=RANDOM_SEED,
-                    n_jobs=-1,
-                ),
-            ),
-        ]
-    )
+    # StandardScaler standardizes each feature to zero mean / unit variance. The
+    # tree ensembles are scale-invariant, but the scaler keeps the artifact
+    # contract explicit and its stats power the backend's explanations and docs.
+    model = Pipeline(steps=[("scaler", StandardScaler()), ("regressor", estimator)])
     model.fit(X_train, y_train)
 
     metrics = {
@@ -101,37 +103,66 @@ def main() -> None:
         "test": evaluate(model, X_test, y_test),
     }
 
-    # Note: feature importances are NOT stored here. The backend reads them
-    # live from the fitted model (models/model.pkl) to avoid duplicating —
-    # and risking drift from — what the model already carries.
+    # Permutation importance is model-agnostic and data-driven: it measures the
+    # drop in score when each feature is shuffled. It cannot be recovered from
+    # the pickled model, so we compute it here (on validation) and store it.
+    perm = permutation_importance(
+        model, X_val, y_val, n_repeats=10, random_state=RANDOM_SEED, n_jobs=-1
+    )
+    perm_importance = [
+        {"feature": f, "importance_mean": float(m), "importance_std": float(s)}
+        for f, m, s in zip(feature_names, perm.importances_mean, perm.importances_std)
+    ]
 
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, MODELS_DIR / "model.pkl")
-
+    joblib.dump(model, MODELS_DIR / f"model_{name}.pkl")
     metadata = {
         "project": "ALICE Track B - Explainable Engine Health & RUL Prediction",
         "dataset": "NASA C-MAPSS FD001",
-        "model_type": "sklearn.Pipeline(MinMaxScaler + RandomForestRegressor)",
+        "model_key": name,
+        "model_type": f"sklearn.Pipeline(StandardScaler + {type(estimator).__name__})",
         "target": TARGET,
         "rul_clip": RUL_CLIP,
         "feature_names": feature_names,
         "n_features": len(feature_names),
         "constant_features": constant_features,
+        "permutation_importance": perm_importance,
         "risk_thresholds": RISK_THRESHOLDS,
         "metrics": metrics,
         "random_seed": RANDOM_SEED,
         "sklearn_version": sklearn.__version__,
+        "xgboost_version": xgboost.__version__,
         "trained_at": datetime.now(timezone.utc).isoformat(),
     }
-    with open(MODELS_DIR / "model_metadata.json", "w", encoding="utf-8") as fh:
+    with open(MODELS_DIR / f"model_{name}_metadata.json", "w", encoding="utf-8") as fh:
         json.dump(metadata, fh, indent=2)
+    return metrics
 
-    print("Saved:")
-    print(f"  {MODELS_DIR / 'model.pkl'}")
-    print(f"  {MODELS_DIR / 'model_metadata.json'}")
-    print("\nMetrics (RUL cycles):")
-    for split, m in metrics.items():
-        print(f"  {split:5} | RMSE {m['rmse']:6.2f} | MAE {m['mae']:6.2f} | R2 {m['r2']:.3f}")
+
+def main() -> None:
+    train_df = load_split("train")
+    val_df = load_split("val")
+    test_df = load_split("test")
+
+    feature_names = [c for c in train_df.columns if c != TARGET]
+    constant_features = [c for c in feature_names if train_df[c].nunique() == 1]
+    data = [
+        (df[feature_names], df[TARGET]) for df in (train_df, val_df, test_df)
+    ]
+
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+    all_metrics = {}
+    for name, estimator in ESTIMATORS.items():
+        all_metrics[name] = train_and_export(
+            name, estimator, data, feature_names, constant_features
+        )
+        print(f"Saved: models/model_{name}.pkl + models/model_{name}_metadata.json")
+
+    print("\nTest-set comparison (RUL cycles):")
+    print(f"  {'model':5} | {'RMSE':>6} | {'MAE':>6} | {'R2':>6}")
+    for name, m in all_metrics.items():
+        t = m["test"]
+        print(f"  {name:5} | {t['rmse']:6.2f} | {t['mae']:6.2f} | {t['r2']:6.3f}")
 
 
 if __name__ == "__main__":
