@@ -31,19 +31,20 @@ insights** (metrics, feature importances, and per-reading SHAP explanations).
 
 Three loosely-coupled pieces, connected in one direction:
 
-Notebooks (Colab) Backend (FastAPI) Dashboard (Streamlit)
-┌────────────────────┐ ┌─────────────────────┐ ┌──────────────────────┐
-│ 1. Data exploration│ ─▶ │ /predict │ ─▶ │ Single Prediction │
-│ 2. Model training │ save │ /predict/batch │ HTTP │ Fleet Prioritization │
-│ 3. Explainability │ ─▶ │ /explain (SHAP) │ ─▶ │ Model Insights │
-│ + export │ │ /prioritize │ │ │
-└────────────────────┘ │ /model-info /health │ └──────────────────────┘
-└─────────────────────┘
-▲
-models/
-model_rf.pkl (RandomForest)
-model_xgb.pkl (XGBoost)
-
+```
+Notebooks (Colab)             Backend (FastAPI)            Dashboard (Streamlit)
+┌────────────────────┐        ┌─────────────────────┐      ┌──────────────────────┐
+│ 1. Data exploration│  ─▶    │ /predict            │ ─▶   │ Single Prediction    │
+│ 2. Model training  │  save  │ /predict/batch      │ HTTP │ Fleet Prioritization │
+│ 3. Explainability  │  ─▶    │ /explain (SHAP)     │ ─▶   │ Model Insights       │
+│    + export        │        │ /prioritize         │      │                      │
+└────────────────────┘        │ /model-info /health │      └──────────────────────┘
+                              └─────────────────────┘
+                                        ▲
+                                     models/
+                                model_rf.pkl (RandomForest)
+                                model_xgb.pkl (XGBoost)
+```
 
 The dashboard **never loads the model itself** — it only calls the backend.
 The backend **never retrains** — it only serves the models exported from the
@@ -53,40 +54,41 @@ notebooks.
 
 ## Repository structure
 
+```
 alice-track-b-SkyPredict-001/
-├── notebooks/ # data → model pipeline
-│ ├── 01_data_exploration.ipynb # load, clean, RUL target, engine-level split
-│ ├── 02_model_training.ipynb # features, models, metrics
-│ └── 03_explainability_and_export.ipynb # SHAP, export artifacts
-├── backend/ # FastAPI service
-│ ├── main.py # app entrypoint
-│ ├── config.py # settings (via pydantic-settings)
-│ ├── schemas.py # request/response contracts
-│ ├── routers/ # one file per HTTP concern
-│ └── services/ # artifact loading, prediction, explainability
-├── frontend/ # Streamlit dashboard
-│ ├── app.py # entry point
-│ ├── pages/
-│ │ ├── 1_Single_Prediction.py
-│ │ ├── 2_Fleet_Prioritization.py
-│ │ └── 3_Model_Insights.py
-│ ├── components/ # charts, inputs, display helpers
-│ └── utils/ # api_client, config
-├── models/ # exported artifacts (loaded, never trained here)
-│ ├── model_rf.pkl # RandomForest pipeline (scaler + regressor)
-│ ├── model_rf_metadata.json
-│ ├── model_xgb.pkl # XGBoost pipeline (scaler + regressor)
-│ └── model_xgb_metadata.json
+├── notebooks/                       # data → model pipeline
+│   ├── 01_data_exploration.ipynb     # load, clean, RUL target, engine-level split
+│   ├── 02_model_training.ipynb       # features, models, metrics
+│   └── 03_explainability_and_export.ipynb   # SHAP, export artifacts
+├── backend/                         # FastAPI service
+│   ├── main.py                       # app entrypoint
+│   ├── config.py                     # settings (via pydantic-settings)
+│   ├── schemas.py                    # request/response contracts
+│   ├── routers/                      # one file per HTTP concern
+│   └── services/                     # artifact loading, prediction, explainability
+├── frontend/                        # Streamlit dashboard
+│   ├── app.py                        # entry point
+│   ├── pages/
+│   │   ├── 1_Single_Prediction.py
+│   │   ├── 2_Fleet_Prioritization.py
+│   │   └── 3_Model_Insights.py
+│   ├── components/                   # charts, inputs, display helpers
+│   └── utils/                        # api_client, config
+├── models/                          # exported artifacts (loaded, never trained here)
+│   ├── model_rf.pkl                  # RandomForest pipeline (scaler + regressor)
+│   ├── model_rf_metadata.json
+│   ├── model_xgb.pkl                 # XGBoost pipeline (scaler + regressor)
+│   └── model_xgb_metadata.json
 ├── data/
-│ ├── raw/CMAPSSData/ # NASA C-MAPSS .txt files (FD001..FD004)
-│ └── processed/ # train / val / test CSVs from Session 1
-├── docs/ # supplementary documentation
-├── images/ # screenshots for docs
+│   ├── raw/CMAPSSData/               # NASA C-MAPSS .txt files (FD001..FD004)
+│   └── processed/                    # train / val / test CSVs from Session 1
+├── docs/                            # supplementary documentation
+├── images/                          # screenshots for docs
 ├── README.md
 ├── requirements.txt
-├── setup_venv.ps1 # Windows one-shot environment setup
-└── start_backend.ps1 / .sh # convenience launchers
-
+├── setup_venv.ps1                    # Windows one-shot environment setup
+└── start_backend.ps1 / .sh           # convenience launchers
+```
 
 ---
 
@@ -131,6 +133,19 @@ streamlit run frontend/app.py
 ```
 
 The dashboard opens at <http://localhost:8501>.
+
+---
+
+## Screenshots
+
+Add PNGs to `images/` and reference them here — for example:
+
+```markdown
+![Single Prediction — healthy engine](images/single_prediction_low.png)
+![Single Prediction — degraded engine](images/single_prediction_high.png)
+![Fleet Prioritization](images/fleet_prioritization.png)
+![Model Insights](images/model_insights.png)
+```
 
 ---
 
@@ -215,13 +230,13 @@ permutation importance for the model as a whole.
 The full pipeline has been validated end-to-end:
 
 - ✅ Single Prediction — healthy engine returns Low risk; degraded engine
-  correctly flips to Medium/High with SHAP identifying the changed sensors as
+  correctly flips to Medium/High, with SHAP identifying the changed sensors as
   the top drivers.
 - ✅ Fleet Prioritization — batches of 2,000+ readings ranked by urgency with
   color-coded risk levels.
 - ✅ Model Insights — MAE / RMSE / R² and importance charts render for both
   models.
-- ✅ Error handling — dashboard displays a clean message when the backend is
+- ✅ Error handling — dashboard shows a clean message when the backend is
   unreachable and recovers on restart.
 
 ---
@@ -231,9 +246,9 @@ The full pipeline has been validated end-to-end:
 **"No module named `shap` / `xgboost`" when starting the backend.**
 Some ML dependencies are used by `backend/services/explainability.py` but may
 not be pinned in `requirements.txt`. Install them explicitly:
-
+```
 pip install shap xgboost
-
+```
 
 **`InconsistentVersionWarning` (yellow) when loading the model.**
 Harmless — indicates the model was pickled with a different scikit-learn
@@ -242,6 +257,11 @@ version than the one running. Predictions remain valid.
 **Dashboard says "Could not reach the backend."**
 Check that the backend is running (`http://127.0.0.1:8000/health` returns
 `model_loaded: true`).
+
+**Fleet Prioritization shows `None` for engine ID / cycle.**
+The processed test CSV was originally saved without `unit_number` /
+`time_in_cycles`. Re-run Session 1 with the updated save cell to regenerate
+`data/processed/*.csv`.
 
 ---
 
@@ -255,7 +275,7 @@ Check that the backend is running (`http://127.0.0.1:8000/health` returns
 | _[Name]_ | Frontend — Streamlit dashboard, charts, UX |
 | _[Name]_ | Integration lead — end-to-end testing, README, coordination |
 
-*(fill in with actual names/roles before submission)*
+*(Replace names/roles before submission.)*
 
 ---
 
@@ -265,29 +285,3 @@ Check that the backend is running (`http://127.0.0.1:8000/health` returns
 - **Reference:** Saxena, A., Goebel, K., Simon, D., & Eklund, N. (2008).
   *Damage propagation modeling for aircraft engine run-to-failure simulation*.
 - Built for the **ALICE Track B** workshop, 2026.
-Before you commit this README
-
-Three things to fill in / verify:
-
-The team names in the "Team & contributions" section — replace _[Name]_ with actual names + refined roles. Only takes 2 minutes if you ask the group.
-The screenshot placeholder — you have 5 great screenshots from your tests (the healthy gauge, degraded gauge, fleet page, model insights). Drop them into images/ and add a Screenshots section between Architecture and Quick Start. Something like:
-markdown
-## Screenshots
-
-**Single Prediction — healthy engine (Low risk):**
-![Single prediction — Low risk](images/single_prediction_low.png)
-
-**Single Prediction — degraded engine (Medium/High risk):**
-![Single prediction — degraded](images/single_prediction_high.png)
-
-**Fleet Prioritization — 2,209 engines ranked by risk:**
-![Fleet prioritization](images/fleet_prioritization.png)
-
-Screenshots make the whole README suddenly feel like a product.
-
-The Known limitations section — if the unit_number CSV bug is still unfixed by submission, add a small note under Troubleshooting so you're transparent:
-markdown
-**Fleet Prioritization shows `None` for engine ID / cycle.**
-The processed test CSV was originally saved without those identifier columns.
-Fixed in a later revision of Session 1's save cell — re-run the notebook to
-regenerate `data/processed/*.csv`.
