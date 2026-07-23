@@ -51,6 +51,15 @@ class ModelArtifacts:
         """
         return self.metadata.get("permutation_importance", [])
 
+    @property
+    def partial_dependence(self) -> list[dict]:
+        """Partial dependence curves computed on validation data at export time.
+
+        Needs a reference dataset, so it is computed at export and stored in the
+        metadata. Empty list if the artifact did not export it.
+        """
+        return self.metadata.get("partial_dependence", [])
+
 
 # Everything the API needs to drive prediction must come from the exported
 # metadata, not from constants baked into the backend.

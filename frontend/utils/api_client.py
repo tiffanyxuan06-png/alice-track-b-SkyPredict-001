@@ -80,6 +80,16 @@ def permutation_importances(model: str | None = None) -> list[dict]:
     return _get("/explain/permutation-importance", _model_params(model))
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def partial_dependence(model: str | None = None, feature: str | None = None) -> list[dict]:
+    params: dict = {}
+    if model:
+        params["model"] = model
+    if feature:
+        params["feature"] = feature
+    return _get("/explain/partial-dependence", params or None)
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def example_reading() -> dict:
     """A realistic sample payload, taken from the backend's OpenAPI example."""

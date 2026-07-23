@@ -14,10 +14,12 @@ from __future__ import annotations
 import streamlit as st
 
 from components.display import backend_status
+from components.theme import apply_theme
 from utils.api_client import APIError, health, model_info
 from utils.config import API_BASE_URL
 
 st.set_page_config(page_title="SkyPredict", page_icon="✈️", layout="wide")
+apply_theme()
 
 st.title("✈️ SkyPredict — Engine Health & RUL")
 st.caption(

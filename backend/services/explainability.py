@@ -19,6 +19,7 @@ from backend.schemas import (
     ExplanationResponse,
     FeatureImportance,
     LocalContribution,
+    PartialDependence,
     PermutationImportance,
     PredictionResponse,
 )
@@ -56,6 +57,16 @@ def permutation_importances(artifacts: ModelArtifacts) -> list[PermutationImport
         reverse=True,
     )
     return [PermutationImportance(**item) for item in items]
+
+
+def partial_dependence_curves(
+    artifacts: ModelArtifacts, feature: str | None = None
+) -> list[PartialDependence]:
+    """Partial dependence curves; optionally filtered to a single feature."""
+    curves = artifacts.partial_dependence
+    if feature is not None:
+        curves = [c for c in curves if c["feature"] == feature]
+    return [PartialDependence(**c) for c in curves]
 
 
 def explain_reading(

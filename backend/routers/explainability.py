@@ -9,11 +9,13 @@ from backend.schemas import (
     EngineReading,
     ExplanationResponse,
     FeatureImportance,
+    PartialDependence,
     PermutationImportance,
 )
 from backend.services.explainability import (
     explain_reading,
     global_importances,
+    partial_dependence_curves,
     permutation_importances,
 )
 from backend.services.prediction import predict_batch
@@ -31,6 +33,17 @@ async def explain_global(artifacts: ArtifactsDep) -> list[FeatureImportance]:
 async def explain_permutation(artifacts: ArtifactsDep) -> list[PermutationImportance]:
     """Model-agnostic permutation importances, computed on validation data."""
     return permutation_importances(artifacts)
+
+
+@router.get("/partial-dependence")
+async def explain_partial_dependence(
+    artifacts: ArtifactsDep, feature: str | None = None
+) -> list[PartialDependence]:
+    """Partial dependence curves: the marginal effect of each feature on RUL.
+
+    Pass ?feature=<name> to get a single curve (non-constant features only).
+    """
+    return partial_dependence_curves(artifacts, feature)
 
 
 @router.post("")

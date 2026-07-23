@@ -5,17 +5,24 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from components.charts import importance_bar, permutation_importance_bar
+from components.charts import (
+    importance_bar,
+    partial_dependence_line,
+    permutation_importance_bar,
+)
 from components.display import model_selector
+from components.theme import apply_theme
 from utils.api_client import (
     APIError,
     global_importances,
     health,
     model_info,
+    partial_dependence,
     permutation_importances,
 )
 
 st.set_page_config(page_title="Model Insights · SkyPredict", page_icon="✈️", layout="wide")
+apply_theme()
 st.title("Model Insights")
 st.caption("How the model performs and which sensors drive its predictions.")
 
@@ -24,6 +31,7 @@ try:
     info = model_info(model)
     global_imp = global_importances(model)
     perm_imp = permutation_importances(model)
+    pdp = partial_dependence(model)
 except APIError as exc:
     st.error(str(exc))
     st.stop()
@@ -48,16 +56,30 @@ if metrics:
     )
 
 st.subheader("Feature importances")
-model_tab, perm_tab = st.tabs(["Model importances", "Permutation importance"])
+model_tab, perm_tab, pdp_tab = st.tabs(
+    ["Model importances", "Permutation importance", "Partial dependence"]
+)
 with model_tab:
     st.caption("The model's own importances, read live from the trained estimator.")
     st.plotly_chart(
         importance_bar(global_imp, "Feature importance (from the trained model)"),
         width="stretch",
+        theme=None,
     )
 with perm_tab:
     st.caption(
         "Model-agnostic: the drop in validation score when each feature is "
         "shuffled. Error bars show the spread across repeats."
     )
-    st.plotly_chart(permutation_importance_bar(perm_imp), width="stretch")
+    st.plotly_chart(permutation_importance_bar(perm_imp), width="stretch", theme=None)
+with pdp_tab:
+    st.caption(
+        "How predicted RUL changes as one sensor varies, averaging over the "
+        "others (scikit-learn partial dependence)."
+    )
+    if pdp:
+        feature = st.selectbox("Feature", [c["feature"] for c in pdp], key="pdp_feature")
+        curve = next(c for c in pdp if c["feature"] == feature)
+        st.plotly_chart(partial_dependence_line(curve), width="stretch", theme=None)
+    else:
+        st.info("Partial dependence is not available for this model.")

@@ -7,9 +7,11 @@ import streamlit as st
 from components.charts import local_contribution_bar, rul_gauge
 from components.display import model_selector, prediction_summary
 from components.inputs import IDENTIFIERS, engine_reading_form
+from components.theme import apply_theme
 from utils.api_client import APIError, example_reading, explain, health, model_info
 
 st.set_page_config(page_title="Single Prediction · SkyPredict", page_icon="✈️", layout="wide")
+apply_theme()
 st.title("Single Prediction")
 st.caption("Enter one engine reading to get its RUL, risk band and the sensors driving it.")
 
@@ -42,12 +44,14 @@ if reading is not None:
         st.plotly_chart(
             rul_gauge(prediction["predicted_rul"], info["rul_clip"], info["risk_thresholds"]),
             width="stretch",
+            theme=None,
         )
         prediction_summary(prediction)
     with right:
         st.plotly_chart(
             local_contribution_bar(result["local_contributions"]),
             width="stretch",
+            theme=None,
         )
     st.caption(
         f"Top drivers are **SHAP values** — each sensor's signed contribution (in "
