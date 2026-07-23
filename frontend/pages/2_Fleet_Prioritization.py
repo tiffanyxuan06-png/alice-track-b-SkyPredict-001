@@ -13,6 +13,33 @@ from utils.api_client import APIError, health, model_info, prioritize
 from utils.config import RISK_COLORS
 
 st.set_page_config(page_title="Fleet Prioritization · SkyPredict", page_icon="✈️", layout="wide")
+bg_image_url = "https://images3.alphacoders.com/888/thumb-1920-888034.png"
+
+st.markdown(
+    f"""
+    <style>
+    /* 1. Main Background Image */
+    [data-testid="stAppViewContainer"] {{
+        background: linear-gradient(rgba(0, 0, 0, 0.60), rgba(0, 0, 0, 0.99)), url("{bg_image_url}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    /* 2. Clear Header */
+    [data-testid="stHeader"] {{
+        background: transparent !important;
+        background-color: rgba(0, 0, 0, 0) !important;
+    }}
+    [data-testid="stAppViewContainer"] h1 {{
+            font-size: 5.5rem !important;
+            font-weight: 800 !important;
+            color: #FFFFFF !important;
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 apply_theme()
 st.title("Fleet Prioritization")
 st.caption("Upload engine readings to rank the fleet by maintenance urgency (shortest RUL first).")

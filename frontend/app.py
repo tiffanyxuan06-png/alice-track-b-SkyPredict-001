@@ -19,9 +19,42 @@ from utils.api_client import APIError, health, model_info
 from utils.config import API_BASE_URL
 
 st.set_page_config(page_title="SkyPredict", page_icon="✈️", layout="wide")
+bg_image_url = "https://images3.alphacoders.com/888/thumb-1920-888034.png"
+
+st.markdown(
+    f"""
+    <style>
+    /* 1. Main Background Image */
+    [data-testid="stAppViewContainer"] {{
+        background: linear-gradient(rgba(0, 0, 0, 0.60), rgba(0, 0, 0, 0.99)), url("{bg_image_url}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    /* 2. Clear Header */
+    [data-testid="stHeader"] {{
+        background: transparent !important;
+        background-color: rgba(0, 0, 0, 0) !important;
+    }}
+    /* Center and enlarge main page title */
+    [data-testid="stAppViewContainer"] h1 {{
+        text-align: center !important;
+        font-size: 3.5rem !important;
+        font-weight: 800 !important;
+        color: #FFFFFF !important;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 apply_theme()
 
-st.title("✈️ SkyPredict — Engine Health & RUL")
+st.title("✈️ SkyPredict ✈️")
+st.markdown(
+    "<h3 style='text-align: center; color: white;'>Engine Health & RUL Prediction</h3>",
+    unsafe_allow_html=True,
+)
 st.caption(
     "Explainable Remaining Useful Life prediction for aircraft engines "
     "(ALICE Track B · NASA C-MAPSS)."

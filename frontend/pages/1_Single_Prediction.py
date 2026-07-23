@@ -11,6 +11,34 @@ from components.theme import apply_theme
 from utils.api_client import APIError, example_reading, explain, health, model_info
 
 st.set_page_config(page_title="Single Prediction · SkyPredict", page_icon="✈️", layout="wide")
+bg_image_url = "https://images3.alphacoders.com/888/thumb-1920-888034.png"
+
+st.markdown(
+    f"""
+    <style>
+    /* 1. Main Background Image */
+    [data-testid="stAppViewContainer"] {{
+        background: linear-gradient(rgba(0, 0, 0, 0.60), rgba(0, 0, 0, 0.99)), url("{bg_image_url}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    /* 2. Clear Header */
+    [data-testid="stHeader"] {{
+        background: transparent !important;
+        background-color: rgba(0, 0, 0, 0) !important;
+    }}
+    /* Make "Model Insights" Title Bigger */
+    [data-testid="stAppViewContainer"] h1 {{
+        font-size: 5.5rem !important;
+        font-weight: 800 !important;
+        color: #FFFFFF !important;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 apply_theme()
 st.title("Single Prediction")
 st.caption("Enter one engine reading to get its RUL, risk band and the sensors driving it.")
