@@ -267,15 +267,18 @@ The processed test CSV was originally saved without `unit_number` /
 
 ## Team & contributions
 
-| Member | Focus |
-|--------|------|
-| _[Name]_ | Notebooks — data exploration, model training, SHAP + export |
-| _[Name]_ | Backend — FastAPI service, artifact loading, endpoints |
-| _[Name]_ | Backend + shared utilities |
-| _[Name]_ | Frontend — Streamlit dashboard, charts, UX |
-| _[Name]_ | Integration lead — end-to-end testing, README, coordination |
+Ng Jing Xuan
+Lim Yue Qi
+Bernice Tan Jiawen
+Kam Xin Le
+Ruben
 
-*(Replace names/roles before submission.)*
+Notebooks — data exploration, model training, SHAP + export 
+Backend — FastAPI service, artifact loading, endpoints 
+Backend + shared utilities 
+Frontend — Streamlit dashboard, charts, UX
+Integration lead — end-to-end testing, README, coordination 
+
 
 ---
 
