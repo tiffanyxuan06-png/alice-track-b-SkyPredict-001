@@ -27,7 +27,7 @@ import pandas as pd
 import sklearn
 import xgboost
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.inspection import permutation_importance
+from sklearn.inspection import partial_dependence, permutation_importance
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -88,6 +88,34 @@ def evaluate(model: Pipeline, X: pd.DataFrame, y: pd.Series) -> dict[str, float]
     }
 
 
+def compute_partial_dependence(model, X, feature_names, constant_features, grid_resolution=20):
+    """1-way partial dependence per non-constant feature.
+
+    The marginal effect of a feature on predicted RUL, averaging over the others
+    (sklearn.inspection.partial_dependence). Grid values are in the original
+    feature units. Constant features are skipped — they have no effect to plot.
+    Needs a reference dataset, so this runs at export and the result is stored.
+    """
+    # sklearn's partial_dependence rejects integer-dtype columns; some sensors
+    # are integer-valued in the CSV, so cast to float first.
+    X = X.astype("float64")
+    curves = []
+    for feature in feature_names:
+        if feature in constant_features:
+            continue
+        pd_result = partial_dependence(
+            model, X, [feature], grid_resolution=grid_resolution, kind="average"
+        )
+        curves.append(
+            {
+                "feature": feature,
+                "grid": [float(v) for v in pd_result["grid_values"][0]],
+                "average": [float(v) for v in pd_result["average"][0]],
+            }
+        )
+    return curves
+
+
 def train_and_export(name, estimator, data, feature_names, constant_features):
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = data
 
@@ -114,6 +142,12 @@ def train_and_export(name, estimator, data, feature_names, constant_features):
         for f, m, s in zip(feature_names, perm.importances_mean, perm.importances_std)
     ]
 
+    # Partial dependence on a validation subsample (bounded for speed).
+    pdp_sample = X_val.sample(n=min(500, len(X_val)), random_state=RANDOM_SEED)
+    partial_dep = compute_partial_dependence(
+        model, pdp_sample, feature_names, constant_features
+    )
+
     joblib.dump(model, MODELS_DIR / f"model_{name}.pkl")
     metadata = {
         "project": "ALICE Track B - Explainable Engine Health & RUL Prediction",
@@ -126,6 +160,7 @@ def train_and_export(name, estimator, data, feature_names, constant_features):
         "n_features": len(feature_names),
         "constant_features": constant_features,
         "permutation_importance": perm_importance,
+        "partial_dependence": partial_dep,
         "risk_thresholds": RISK_THRESHOLDS,
         "metrics": metrics,
         "random_seed": RANDOM_SEED,

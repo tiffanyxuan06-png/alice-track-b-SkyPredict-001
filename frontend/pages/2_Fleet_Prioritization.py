@@ -8,10 +8,12 @@ import streamlit as st
 from components.charts import risk_distribution
 from components.display import model_selector
 from components.inputs import csv_to_readings
+from components.theme import apply_theme
 from utils.api_client import APIError, health, model_info, prioritize
 from utils.config import RISK_COLORS
 
 st.set_page_config(page_title="Fleet Prioritization · SkyPredict", page_icon="✈️", layout="wide")
+apply_theme()
 st.title("Fleet Prioritization")
 st.caption("Upload engine readings to rank the fleet by maintenance urgency (shortest RUL first).")
 
@@ -60,7 +62,7 @@ c2.metric("High risk", summary["high_risk"])
 c3.metric("Medium risk", summary["medium_risk"])
 c4.metric("Low risk", summary["low_risk"])
 
-st.plotly_chart(risk_distribution(summary), width="stretch")
+st.plotly_chart(risk_distribution(summary), width="stretch", theme=None)
 
 st.subheader("Ranked engines")
 ranked = pd.DataFrame(result["ranked_engines"])

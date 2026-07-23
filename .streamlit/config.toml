@@ -1,0 +1,9 @@
+# SkyPredict dashboard theme — flight-deck instrument.
+# Read by Streamlit when launched from the repo root.
+[theme]
+base = "dark"
+primaryColor = "#4FD8EB"
+backgroundColor = "#0B0E12"
+secondaryBackgroundColor = "#141A21"
+textColor = "#E4EAF0"
+font = "sans serif"

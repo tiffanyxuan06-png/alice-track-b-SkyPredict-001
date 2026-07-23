@@ -26,6 +26,19 @@ def test_permutation_importance(client):
         assert item["importance_std"] >= 0
 
 
+def test_partial_dependence(client):
+    curves = client.get("/explain/partial-dependence").json()
+    assert len(curves) > 0  # non-constant features
+    for c in curves:
+        assert {"feature", "grid", "average"} <= set(c)
+        assert len(c["grid"]) == len(c["average"]) > 1
+
+    # single-feature filter returns just that curve
+    name = curves[0]["feature"]
+    one = client.get("/explain/partial-dependence", params={"feature": name}).json()
+    assert len(one) == 1 and one[0]["feature"] == name
+
+
 def test_explain_reading(client, sample_reading):
     body = client.post("/explain", json=sample_reading).json()
 

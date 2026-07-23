@@ -104,6 +104,12 @@ class PermutationImportance(BaseModel):
     importance_std: float = Field(description="Std of the drop across repeats.")
 
 
+class PartialDependence(BaseModel):
+    feature: str
+    grid: list[float] = Field(description="Feature values the effect was evaluated at.")
+    average: list[float] = Field(description="Average predicted RUL at each grid value.")
+
+
 class LocalContribution(BaseModel):
     feature: str
     value: float
